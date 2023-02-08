@@ -1,4 +1,4 @@
-import { derived, readable, writable } from './store'
+import { derived, readable, writable } from '../lib/store'
 
 export const count = writable(0)
 export const double = derived(count, ($count) => $count * 2)

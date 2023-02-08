@@ -1,20 +1,17 @@
-import './App.css'
 import Button from './Increment'
 
-import { useStore } from './store'
-import { time } from './myStore'
-import { useState } from 'react'
+import { useStore } from './lib/store'
+import { time } from './stores/myStore'
 
 function App() {
+	const store = useStore(time)
 
-  const store = useStore(time)
-
-  return (
-    <div className="App">
-      {store.get()}
-      <Button />
-    </div>
-  )
+	return (
+		<div className="App">
+			{store.get()}
+			<Button />
+		</div>
+	)
 }
 
 export default App
