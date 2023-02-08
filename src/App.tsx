@@ -1,10 +1,10 @@
 import Button from './Increment'
 
 import { useStore } from './lib/store'
-import { time } from './stores/myStore'
+import { time, count } from './stores/myStore'
 
 function App() {
-	const store = useStore(time)
+	const store = useStore(count)
 
 	return (
 		<div className="App">
