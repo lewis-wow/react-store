@@ -112,3 +112,15 @@ count.set(1) // set new value
 
 count.update(currentValue => currentValue + 1) // update current value
 ```
+
+## How to use
+
+For example you can use writable store as currently logged in user, components will react on any changes over the application.
+
+```ts
+export const user = writable({
+  name: '',
+  email: '',
+  isLoggedIn: false,
+})
+```
