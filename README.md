@@ -2,6 +2,12 @@
 
 Fully typed react reactive stores. Stores are simple with native feel. No Providers, no weird store structure.
 
+## Install
+
+```bash
+npm i rastore
+```
+
 ## Store file
 
 ```ts
