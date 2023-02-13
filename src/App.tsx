@@ -1,14 +1,14 @@
 import Button from './Increment'
 
 import { useStore } from './lib/store'
-import { time, count } from './stores/myStore'
+import { time as timer, count as counter } from './stores/myStore'
 
 function App() {
-	const store = useStore(count)
+	const time = useStore(timer)
 
 	return (
 		<div className="App">
-			{store.get()}
+			seconds from start: {time}s
 			<Button />
 		</div>
 	)

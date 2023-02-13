@@ -10,8 +10,8 @@ export const count = writable(0)
 
 ```tsx
 export default function Increment() {
-  const store = useStore(count)
-  return <button onClick={() => store.update(val => val + 1)}>Increment</button>
+  const [count, update] = useStore(counter)
+  return <button onClick={() => update(val => val + 1)}>Increment</button>
 }
 ```
 
@@ -21,11 +21,11 @@ On every click in `Increment` component, App components will automatically reren
 
 ```tsx
 export default function App() {
-  const store = useStore(count)
+  const [count, update] = useStore(counter)
 
   return (
     <div className="App">
-      count: {store.get()}
+      count: {count}
       <Increment />
     </div>
   )
@@ -44,6 +44,20 @@ This store cannot be set or update outside the setter function scope
 export const time = readable(0, (set) => {
   setInterval(() => set(value => value + 1), 1000)
 })
+```
+
+Readable and Derived doesn't have the setter in `useStore`
+
+```tsx
+export default function App() {
+  const seconds = useStore(timer)
+
+  return (
+    <div className="App">
+      seconds from start: {seconds}s
+    </div>
+  )
+}
 ```
 
 ### Writable

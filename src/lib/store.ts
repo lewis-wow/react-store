@@ -1,8 +1,11 @@
-import { useReducer } from 'react'
+import { useSyncExternalStore } from 'react'
 
-export type Subscriber<T> = (callback: (value: T) => any) => {
+export interface Unsubscriber {
 	unsubscribe: () => void
 }
+
+export type SubscriberCallback<T> = (value: T, unsubscriber: Unsubscriber) => any
+export type Subscriber<T> = (callback: SubscriberCallback<T>) => Unsubscriber
 
 export interface Writable<T> {
 	subscribe: Subscriber<T>
@@ -24,23 +27,32 @@ export interface Derived<T> {
 	$$type: 'derived'
 }
 
+const createSubscription = <T>(
+	subscribers: ((value: T) => SubscriberCallback<T>)[],
+	subscriber: SubscriberCallback<T>,
+) => {
+	const unsubsciber: Unsubscriber = {
+		unsubscribe: () => {
+			const index = subscribers.indexOf(subscriberContext)
+			subscribers.splice(index, 1)
+		},
+	}
+
+	function subscriberContext(value: T) {
+		return subscriber(value, unsubsciber)
+	}
+
+	subscribers.push(subscriberContext)
+
+	return unsubsciber
+}
+
 const writable = <T>(value: T): Writable<T> => {
-	const subscribers: ((value: T) => any)[] = []
+	const subscribers: ((value: T) => SubscriberCallback<T>)[] = []
 	let currentState = value
 
 	return {
-		subscribe: (subscriber: (value: T) => any) => {
-			subscribers.push(subscriber)
-
-			console.log('subscribers', subscribers)
-
-			return {
-				unsubscribe: () => {
-					const index = subscribers.indexOf(subscriber)
-					subscribers.splice(index, 1)
-				},
-			}
-		},
+		subscribe: (subscriber: SubscriberCallback<T>) => createSubscription(subscribers, subscriber),
 		set: (value: T) => {
 			currentState = value
 			subscribers.forEach((subscriber) => subscriber(currentState))
@@ -66,16 +78,7 @@ const readable = <T>(value: T, initialSetter?: (set: (setter: (value: T) => T) =
 	if (initialSetter) initialSetter(set)
 
 	return {
-		subscribe: (subscriber: (value: T) => any) => {
-			subscribers.push(subscriber)
-
-			return {
-				unsubscribe: () => {
-					const index = subscribers.indexOf(subscriber)
-					subscribers.splice(index, 1)
-				},
-			}
-		},
+		subscribe: (subscriber: SubscriberCallback<T>) => createSubscription(subscribers, subscriber),
 		get: () => currentState,
 		$$type: 'readable',
 	}
@@ -93,33 +96,35 @@ const derived = <T>(store: Writable<T> | Readable<T>, setter: (value: T) => T): 
 	store.subscribe((value) => set(setter(value)))
 
 	return {
-		subscribe: (subscriber: (value: T) => any) => {
-			subscribers.push(subscriber)
-
-			return {
-				unsubscribe: () => {
-					const index = subscribers.indexOf(subscriber)
-					subscribers.splice(index, 1)
-				},
-			}
-		},
+		subscribe: (subscriber: SubscriberCallback<T>) => createSubscription(subscribers, subscriber),
 		get: () => currentState,
 		$$type: 'derived',
 	}
 }
 
-function useStore<T>(store: Writable<T>): Writable<T>
-function useStore<T>(store: Readable<T>): Readable<T>
-function useStore<T>(store: Derived<T>): Derived<T>
-function useStore<T>(store: Writable<T> | Readable<T> | Derived<T>): Writable<T> | Readable<T> | Derived<T> {
-	const [currentState, forceUpdate] = useReducer((x) => x + 1, 0)
+function useStore<T>(store: Writable<T>): [T, (value: ((current: T) => T) | T) => void]
+function useStore<T>(store: Readable<T>): T
+function useStore<T>(store: Derived<T>): T
+function useStore<T>(store: Writable<T> | Readable<T> | Derived<T>): [T, (value: T | ((current: T) => T)) => void] | T {
+	const snapshot = useSyncExternalStore(
+		(onStoreChange) => () => {
+			store.subscribe(onStoreChange)
+		},
+		store.get,
+		store.get,
+	)
 
-	if (currentState === 0) {
-		// state is initial
-		store.subscribe(forceUpdate)
+	const setter = (value: ((current: T) => T) | T) => {
+		if (typeof value === 'function') {
+			;(store as Writable<T>).update(value as (current: T) => T)
+		} else {
+			;(store as Writable<T>).set(value)
+		}
 	}
 
-	return store
+	if (store.$$type === 'readable' || store.$$type === 'derived') return snapshot
+
+	return [snapshot, setter]
 }
 
 export { writable, readable, derived, useStore }
