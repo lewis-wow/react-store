@@ -44,10 +44,10 @@ const readable = <T>(value: T, initialSetter?: (set: (setter: (value: T) => T) =
 		subscribers.forEach((subscriber) => subscriber(currentState))
 	}
 
-	if (initialSetter) initialSetter(set)
+	const cleanup = initialSetter?.(set)
 
 	return {
-		subscribe: (subscriber: Subscriber<T>) => createSubscription(subscribers, subscriber),
+		subscribe: (subscriber: Subscriber<T>) => createSubscription(subscribers, subscriber, cleanup),
 		get: () => currentState,
 		$$type: 'readable',
 	}
