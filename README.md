@@ -42,7 +42,11 @@ This store cannot be set or update outside the setter function scope
 
 ```ts
 export const time = readable(0, (set) => {
-  setInterval(() => set(value => value + 1), 1000)
+  const interval = setInterval(() => set(value => value + 1), 1000)
+
+  return () => {
+    clearInterval(interval) // cleanup function, triggered after the last subscriber was removed
+  }
 })
 ```
 
